@@ -1,4 +1,5 @@
 {
   "name": "ArrowHead Alarm System (IP / Serial module)",
+  "content_in_root": false,
   "homeassistant": "2024.1.2"
 }

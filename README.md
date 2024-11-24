@@ -1,46 +1,70 @@
-# Home Assistant ArrowHead Alarm System (IP / Serial module) Custom Component
+<div align="center">
+
+<img src="https://avatars.githubusercontent.com/u/34251619?v=4" align="center" width="144px" height="144px"/>
+
+### Home Assistant - Custom Integration - ArrowHead Alarm System
+
+</div>
+
+---
+
+## 📖 Overview
+
+This is a HACS integration for ArrowHead Alarm Systems, allowing you to integrate your AAP alarm into Home Assistant, giving you access to control your alarm panel, outputs and use zone sensors in your home automations.
+
+To use this integration with Home Assistant you must have an AAP alarm with one of the following modules to allow this integration to communicate with your alarm:
+
+- AAP Elite ESL-2 based PCB
+- AAP Elite ESL-2 IoT / APP POD [link](https://www.aap.co.nz/shop/Alarm+Systems/Modules/ESL-2+IoT.html), or
+- AAP RS232-BD [link](https://www.aap.co.nz/shop/Alarm+Systems/Modules/RS232-BD.html)
+
+<br>
+
+> [!NOTE]
+> The firmware for the APP Elite ESL-2 IOT / APP module needs to be `Ver 2.10.3628 2017 Oct 20 09:48:43`. Contact AAP Support to request exact firmware version [email](mailto:tech@aap.co.nz)
+
+<br>
+
+> [!WARNING]
+> *This integration has not yet been tested with any newer ArrowHead Alarm System units like those powered by the EliteControl. It may work with the [EC-i RS232](https://www.aap.co.nz/shop/Alarm+Systems/Modules/EC-i+RS232.html) module.*
 
 This is a custom component for ArrowHead Home Alarm System using the IP / Serial module to integrate with Home Assistant.
 
-## Requirements:
-- Hardware either of thoose are reported working
-  - AAP Elite ESL-2 with ESL-2 APP POD
-  - AAP Elite ESL-2
-- Firmware for Ip Module or APP POD
-  - `Ver 2.10.3628 2017 Oct 20 09:48:43`
-  Contact AAP Support to request exact Firmware version [email](mailto:tech@aap.co.nz)
 
-## Installation
+## 💽 Installation
 
-You will need to install the ha_aapalarm manually.
+### HACS Based Install
 
-### Setup
-- create custom_components folder if it does not exist to get following structure\
-  `config/custom_components`
+If you are using HACS to manage custom components in your Home Assistant installation you can easily add this repo as a custom repo in HACS.
 
-#### Manual file copy
-- create aapalarm folder inside custom_components folder\
-  `config/custom_components/aapalarm`
-- copy all files from [custom_components/aapalarm/](custom_components/aapalarm/) into the previously created folder
+  1. Navigate to the **HACS** console within **Home Assistant**
+  2. Click the **3 dots** in the upper right corner
+  3. Select **Custom repositories**
+  4. Use the below information to add this repo to HACS
+   
+      - Repository:   `https://github.com/osotechie/ha_aapalarm`
+      - Type:         `integration`
+  
+  5. Restart Home Assistant
+  
+### Manual Install
 
-#### Cloning repo
-- use Terminal AddOn or ssh to connect to HomeAssistant
-- checkout ha_aapalarm into config directory\
-  `git clone https://github.com/osotechie/ha_aapalarm`
-- cd into config/custom_components folder\
-  `cd config/custom_components`
-- create symlink for aapalarm\
-  `ln -s ../ha_aapalarm/custom_components/aapalarm aapalarm`
+  1. Create custom_components folder if it does not exist to get following structure\
+     `config/custom_components`
 
-### Restart HomeAssistant
+  2. Create `aaplarm` folder inside the **custom_components** folder
+     `config/custom_components/aapalarm`
 
-### Configuration
+  3. Download a copy of this repo, and copy all files from [custom_components/aapalarm/](custom_components/aapalarm/) into the previously created folder
+  
+  4. Restart Home Assistant 
 
-you can use the [sample configuration](sample_configuration.yaml) as a starting point
+<br>
 
-### Restart HomeAssistant
+## 🗒️Configuration
 
-## Configuration Details
+Below is an example of the configuration you need to add to your Home Assistant `Configuration.yaml` file.
+
 ```
 aapalarm:
   
@@ -52,7 +76,7 @@ aapalarm:
   timeout: 20
   
   # CONFIGURATION FOR AREAS USED BY YOUR SYSTEM
-  areas:                                                        *# Include only the areas used by your system*
+  areas:                                                        # Include only the areas used by your system
     1:
       name: 'Home'                                              # STRING: Update based on your system
       code: '1234'                                              # STRING: Code used to Arm / Disarm the area
@@ -72,7 +96,7 @@ aapalarm:
       ... 
   
   # CONFIGURATION FOR ZONES USED BY YOUR SYSTEM
-  zones:                                                        *# Include only the Zones used by your system*
+  zones:                                                        # Include only the Zones used by your system
     1:
       name: 'Entrance'                                          # STRING: Update based on your system
       type: 'motion'                                            # STRING: Set to zone sensor type (supported types are motion, door, window,smoke)
@@ -80,5 +104,15 @@ aapalarm:
       ...
 ```
 
+There is also sample configuration files included in this repo for additional help configuring this integration.
+- [sample_configuration_ip.yaml](sample_configuration_ip.yaml)
+- [sample_configuration_serial.yaml](sample_configuration_serial.yaml)
 
-Based on the amazing working of [febalci](https://github.com/febalci), and customised to work more specifically with AAP systems using either the IP module or Serial module from the [pyaapalarmmodule](https://github.com/osotechie/pyaapalarmmodule) another adaptation of [febalci](https://github.com/febalci) original [pycrowipmodule](https://github.com/febalci/pycrowipmodule)
+<br>
+
+## 🙌 Acknowledgements
+
+The source code for this integration is based on the amazing work of [febalci](https://github.com/febalci), and has been adapted to more closely align with the ArrowHead Alarm System, and support both the IP and Serial modules for communicating with the alarm. Make sure to check out more of [febalci](https://github.com/febalci) work, including:
+
+- [ha_pycrowipmodule](https://github.com/febalci/ha_pycrowipmodule) - the inspiriation for this Custom Integration for Home Assistant, using the pycrowipmodule to allow you to integrate Crow / AAP systems using the IP module
+- [pycrowipmodule](https://github.com/febalci/pycrowipmodule) - the underlying python module for the ha_pycrowipmodule, allowing communication with Crow / AAP systems using the IP module
