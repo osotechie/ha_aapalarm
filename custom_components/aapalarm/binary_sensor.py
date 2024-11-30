@@ -6,8 +6,10 @@ from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.typing import ConfigType
+from homeassistant.helpers.device_registry import DeviceInfo
 
 from . import (
+    DOMAIN,
     CONF_ZONENAME,
     CONF_ZONETYPE,
     DATA_AAP,
@@ -72,6 +74,25 @@ class AAPModuleBinarySensor(AAPModuleDevice, BinarySensorEntity):
     def extra_state_attributes(self):
         """Return the state attributes."""
         return self._info["status"]
+
+    @property
+    def unique_id(self):
+        """Return a unique ID for the module device."""
+        return f"aapalarm_zone_{self._name}"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            identifiers={
+                # Serial numbers are unique identifiers within a specific domain
+                "aapalarm",
+                f"{self.name}",
+            },
+            name="Elite S Alarm System",
+            manufacturer="Arrowhead Alarms",
+            model="IP / Serial Module",
+        )
 
     @callback
     def _update_callback(self, zone):

@@ -1,13 +1,14 @@
 {
     "domain": "aapalarm",
-    "name": "ArrowHead Alarm System",
+    "name": "Arrowhead Alarm System",
     "documentation": "https://github.com/osotechie/ha_aapalarm",
     "issue_tracker": "https://github.com/osotechie/ha_aapalarm/issues",
     "integration_type": "device",
+    "config_flow": true,
     "codeowners": [
         "@osotechie"
     ],
-    "version": "2024.11.24",
+    "version": "2024.11.30",
 
     "requirements": [
         "pyaapalarmmodule==2024.11.24"

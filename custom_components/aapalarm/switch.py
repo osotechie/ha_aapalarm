@@ -7,9 +7,11 @@ from homeassistant.const import STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.typing import ConfigType
+from homeassistant.helpers.device_registry import DeviceInfo
 
 from . import (
     CONF_OUTPUTNAME,
+    DOMAIN,
     DATA_AAP,
     OUTPUT_SCHEMA,
     SIGNAL_OUTPUT_UPDATE,
@@ -71,6 +73,11 @@ class AAPModuleOutput(AAPModuleDevice, SwitchEntity):
         self._state = self._info["status"]["open"]
         _LOGGER.debug("Is_on=%s", str(self._state))
         return self._state
+    
+    @property
+    def unique_id(self):
+        """Return a unique ID for the binary sensor."""
+        return f"{DOMAIN}_alarmswitch_{self._output_number}_{self._name}"
 
     async def async_turn_on(self, **kwargs):
         """Turn on the output."""
@@ -83,6 +90,25 @@ class AAPModuleOutput(AAPModuleDevice, SwitchEntity):
         self.hass.data[DATA_AAP].command_output(str(self._output_number))
         self._state = STATE_OFF
         self.async_schedule_update_ha_state()
+
+    @property
+    def unique_id(self):
+        """Return a unique ID for the module device."""
+        return f"aapalarm_output_{self._name}"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            identifiers={
+                # Serial numbers are unique identifiers within a specific domain
+                "aapalarm",
+                f"{self.name}",
+            },
+            name="Elite S Alarm System",
+            manufacturer="Arrowhead Alarms",
+            model="IP / Serial Module",
+        )
 
     @callback
     def _update_callback(self, output):

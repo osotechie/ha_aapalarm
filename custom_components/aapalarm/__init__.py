@@ -13,39 +13,53 @@ from homeassistant.helpers.discovery import async_load_platform
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.typing import ConfigType
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.helpers.device_registry import DeviceInfo
+
+
+from .const import (
+    # CONSTANTS for Integration
+    DOMAIN,
+    DATA_AAP,
+
+    # CONSTANTS for Connection Type
+    CONF_AAP_CONNECTIONTYPE,
+    CONF_AAP_PORT,
+    CONF_AAP_KEEPALIVE,
+
+    # CONSTATNS for Areas
+    CONF_AREAS,
+    CONF_AREANAME,
+    CONF_CODE,
+    CONF_CODE_ARM_REQUIRED,
+
+    # CONSTANTS for Zones
+    CONF_ZONENUM,
+    CONF_ZONES,
+    CONF_ZONENAME,
+    CONF_ZONETYPE,
+
+    # CONSTATNS for Outputs
+    CONF_OUTPUTNUM,
+    CONF_OUTPUTS,
+    CONF_OUTPUTNAME,
+
+    # DEFAULT VALUES
+    DEFAULT_PORT,
+    DEFAULT_KEEPALIVE,
+    DEFAULT_ZONETYPE,
+    DEFAULT_TIMEOUT, 
+
+    # HA Constants
+    SIGNAL_ZONE_UPDATE,
+    SIGNAL_AREA_UPDATE,
+    SIGNAL_SYSTEM_UPDATE,
+    SIGNAL_OUTPUT_UPDATE,
+    SIGNAL_KEYPAD_UPDATE,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
-DOMAIN = "aapalarm"
-
-DATA_AAP = "aapalarm"
-
-CONF_AAP_KEEPALIVE = "keepalive_interval"
-CONF_AAP_CONNECTIONTYPE = "connectiontype"
-CONF_AAP_PORT = "port"
-
-CONF_AREAS = "areas"
-CONF_AREANAME = "name"
-CONF_CODE = "code"
-CONF_CODE_ARM_REQUIRED = "code_arm_required"
-
-CONF_ZONES = "zones"
-CONF_ZONENAME = "name"
-CONF_ZONETYPE = "type"
-
-CONF_OUTPUTS = "outputs"
-CONF_OUTPUTNAME = "name"
-
-DEFAULT_PORT = "5002"
-DEFAULT_KEEPALIVE = 60
-DEFAULT_ZONETYPE = "opening"
-DEFAULT_TIMEOUT = 10
-
-SIGNAL_ZONE_UPDATE = "aapalarm.zones_updated"
-SIGNAL_AREA_UPDATE = "aapalarm.areas_updated"
-SIGNAL_SYSTEM_UPDATE = "aapalarm.system_updated"
-SIGNAL_OUTPUT_UPDATE = "aapalarm.output_updated"
-SIGNAL_KEYPAD_UPDATE = "aapalarm.keypad_updated"
 
 OUTPUT_SCHEMA = vol.Schema(
     {
@@ -89,19 +103,23 @@ CONFIG_SCHEMA = vol.Schema(
 )
 
 
-async def async_setup(hass: HomeAssistant, config: ConfigType) -> None:
-    """Set up for AAP IP / Serial Module."""
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Set up the AAP Alarm component."""
+    hass.data.setdefault(DOMAIN, {})
+    return True
 
-    conf = config.get(DOMAIN)
-    connectiontype = conf.get(CONF_AAP_CONNECTIONTYPE)
-    host = conf.get(CONF_HOST)
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Set up AAP Alarm from a config entry."""
+    conf = entry.data
+    connectiontype = conf[CONF_AAP_CONNECTIONTYPE]
+    host = conf[CONF_HOST]
     code = "0000"
-    port = conf.get(CONF_AAP_PORT)
-    keep_alive = conf.get(CONF_AAP_KEEPALIVE)
-    zones = conf.get(CONF_ZONES)
-    areas = conf.get(CONF_AREAS)
-    outputs = conf.get(CONF_OUTPUTS)
-    connection_timeout = conf.get(CONF_TIMEOUT)
+    port = conf[CONF_AAP_PORT]
+    keep_alive = conf[CONF_AAP_KEEPALIVE]
+    zones = conf[CONF_ZONES]
+    areas = conf[CONF_AREAS]
+    outputs = conf[CONF_OUTPUTS]
+    connection_timeout = conf[CONF_TIMEOUT]
     sync_connect = asyncio.Future()
 
     controller = AAPAlarmPanel(
@@ -185,7 +203,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> None:
                 "alarm_control_panel",
                 "aapalarm",
                 {CONF_AREAS: areas},
-                config,
+                entry,
             )
         )
         hass.async_create_task(
@@ -194,7 +212,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> None:
                 "sensor",
                 "aapalarm",
                 {CONF_AREAS: areas},
-                config,
+                entry,
             )
         )
 
@@ -205,7 +223,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> None:
                 "binary_sensor",
                 "aapalarm",
                 {CONF_ZONES: zones},
-                config,
+                entry,
             )
         )
 
@@ -216,9 +234,18 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> None:
                 "switch",
                 "aapalarm",
                 {CONF_OUTPUTS: outputs},
-                config,
+                entry,
             )
         )
+
+    return True
+
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload a config entry."""
+    controller = hass.data[DATA_AAP]
+    controller.stop()
+    hass.data.pop(DATA_AAP)
 
     return True
 
@@ -241,3 +268,22 @@ class AAPModuleDevice(Entity):
     def should_poll(self):
         """No polling needed."""
         return False
+    
+    @property
+    def unique_id(self):
+        """Return a unique ID for the module device."""
+        return f"aapalarm_module_{self._name}"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            identifiers={
+                # Serial numbers are unique identifiers within a specific domain
+                "aapalarm",
+                f"{self.name}",
+            },
+            name="Elite S Alarm System",
+            manufacturer="Arrowhead Alarms",
+            model="IP / Serial Module",
+        )

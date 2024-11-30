@@ -2,7 +2,7 @@
 
 <img src="https://avatars.githubusercontent.com/u/34251619?v=4" align="center" width="144px" height="144px"/>
 
-### Home Assistant - Custom Integration - ArrowHead Alarm System
+### Home Assistant - Custom Integration - Arrowhead Alarm System
 
 </div>
 
@@ -10,7 +10,7 @@
 
 ## 📖 Overview
 
-This is a HACS integration for ArrowHead Alarm Systems, allowing you to integrate your AAP alarm into Home Assistant, giving you access to control your alarm panel, outputs and use zone sensors in your home automations.
+This is a HACS integration for Arrowhead Alarm Systems, allowing you to integrate your AAP alarm into Home Assistant, giving you access to control your alarm panel, outputs and use zone sensors in your home automations.
 
 To use this integration with Home Assistant you must have an AAP alarm with one of the following modules to allow this integration to communicate with your alarm:
 
@@ -26,9 +26,9 @@ To use this integration with Home Assistant you must have an AAP alarm with one 
 <br>
 
 > [!WARNING]
-> *This integration has not yet been tested with any newer ArrowHead Alarm System units like those powered by the EliteControl. It may work with the [EC-i RS232](https://www.aap.co.nz/shop/Alarm+Systems/Modules/EC-i+RS232.html) module.*
+> *This integration has not yet been tested with any newer Arrowhead Alarm System units like those powered by the EliteControl. It may work with the [EC-i RS232](https://www.aap.co.nz/shop/Alarm+Systems/Modules/EC-i+RS232.html) module.*
 
-This is a custom component for ArrowHead Home Alarm System using the IP / Serial module to integrate with Home Assistant.
+This is a custom component for Arrowhead Home Alarm System using the IP / Serial module to integrate with Home Assistant.
 
 
 ## 💽 Installation

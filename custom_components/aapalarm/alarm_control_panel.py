@@ -19,6 +19,7 @@ from homeassistant.core import HomeAssistant, callback
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.typing import ConfigType
+from homeassistant.helpers.device_registry import DeviceInfo
 
 from . import (
     AREA_SCHEMA,
@@ -108,6 +109,7 @@ class AAPModuleAlarm(AAPModuleDevice, AlarmControlPanelEntity):
             self._area_number = "B"
         self._code = code
         self._code_arm_required = code_arm_required
+        
 
         _LOGGER.debug("Setting up alarm: %s", alarm_name)
         super().__init__(alarm_name, info, controller)
@@ -183,6 +185,25 @@ class AAPModuleAlarm(AAPModuleDevice, AlarmControlPanelEntity):
     def extra_state_attributes(self):
         """Return the state attributes."""
         return self._info["status"]
+
+    @property
+    def unique_id(self):
+        """Return a unique ID for the module device."""
+        return f"aapalarm_alamrpanel_{self._name}"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            identifiers={
+                # Serial numbers are unique identifiers within a specific domain
+                "aapalarm",
+                f"{self.name}",
+            },
+            name="Elite S Alarm System",
+            manufacturer="Arrowhead Alarms",
+            model="IP / Serial Module",
+        )
 
     @callback
     def async_alarm_keypress(self, keypress=None):

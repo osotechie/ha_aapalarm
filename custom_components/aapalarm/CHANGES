@@ -1,1 +1,13 @@
+### Home Assistant - Custom Integration - Arrowhead Alarm System
 
+### 2024.11.24 - Initial Release
+
+### 2024.11.30 - Add UI Configuration for setup of Integration
+
+- Updated integration to support config flows to allow setup of integration via the UI, instead of via YAML
+
+NOTES:
+- Config Flow still requires a bit of tweaking, but replicates the functionality of the YAML (just needs some tweaks to display names etc)
+
+ISSUES:
+- For some reason the entities created are not associated with a single device or the entry within the Integration in HA
