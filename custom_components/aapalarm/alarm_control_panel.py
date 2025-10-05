@@ -11,12 +11,14 @@ from homeassistant.components.alarm_control_panel import (
     AlarmControlPanelState,
     CodeFormat,
 )
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     ATTR_ENTITY_ID,
     STATE_UNKNOWN,
 )
 from homeassistant.core import HomeAssistant, callback
 import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.typing import ConfigType
 
@@ -25,7 +27,7 @@ from . import (
     CONF_AREANAME,
     CONF_CODE,
     CONF_CODE_ARM_REQUIRED,
-    DATA_AAP,
+    DOMAIN as AAP_DOMAIN,
     SIGNAL_AREA_UPDATE,
     SIGNAL_KEYPAD_UPDATE,
     AAPModuleDevice,
@@ -43,23 +45,40 @@ ALARM_KEYPRESS_SCHEMA = vol.Schema(
 )
 
 
-async def async_setup_platform(
-    hass: HomeAssistant, config: ConfigType, async_add_entities, discovery_info=None
-):
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
     """Perform the setup for AAP IP / Serial Module alarm panels."""
-    configured_areas = discovery_info["areas"]
+    controller = hass.data[AAP_DOMAIN][entry.entry_id]
+    configured_areas = entry.data.get("areas", {})
 
     devices = []
     for part_num in configured_areas:
         device_config_data = AREA_SCHEMA(configured_areas[part_num])
+        
+        # Get area state, fallback to empty dict if not available
+        area_info = getattr(controller, 'area_state', {}).get(part_num, {
+            "status": {
+                "alarm": False,
+                "armed": False, 
+                "stay_armed": False,
+                "exit_delay": False,
+                "stay_exit_delay": False,
+                "disarmed": True
+            }
+        })
+        
         device = AAPModuleAlarm(
             hass,
+            entry,
             part_num,
             device_config_data[CONF_AREANAME],
             device_config_data[CONF_CODE],
             device_config_data[CONF_CODE_ARM_REQUIRED],
-            hass.data[DATA_AAP].area_state[part_num],
-            hass.data[DATA_AAP],
+            area_info,
+            controller,
         )
         devices.append(device)
 
@@ -94,6 +113,7 @@ class AAPModuleAlarm(AAPModuleDevice, AlarmControlPanelEntity):
     def __init__(
         self,
         hass: HomeAssistant,
+        entry: ConfigEntry,
         area_number,
         alarm_name,
         code,
@@ -102,26 +122,52 @@ class AAPModuleAlarm(AAPModuleDevice, AlarmControlPanelEntity):
         controller,
     ) -> None:
         """Initialize the alarm panel."""
-        if area_number == 1:
-            self._area_number = "A"
-        else:
-            self._area_number = "B"
+        self._area_number = area_number  # Keep original area number for comparison
         self._code = code
         self._code_arm_required = code_arm_required
 
-        _LOGGER.debug("Setting up alarm: %s", alarm_name)
-        super().__init__(alarm_name, info, controller)
+        _LOGGER.debug("Setting up alarm: %s for area number: %s", alarm_name, area_number)
+        super().__init__(entry, alarm_name, info, controller, area_number, alarm_name, "areas")
 
     async def async_added_to_hass(self):
         """Register callbacks."""
         async_dispatcher_connect(self.hass, SIGNAL_KEYPAD_UPDATE, self._update_callback)
         async_dispatcher_connect(self.hass, SIGNAL_AREA_UPDATE, self._update_callback)
+        
+        # Force an initial state update
+        _LOGGER.debug("Alarm panel added to hass, forcing initial state update for area %s", self._area_number)
+        self.async_schedule_update_ha_state()
 
     @callback
     def _update_callback(self, area):
         """Update Home Assistant state, if needed."""
-        if area is None or area == self._area_number:
-            self.async_schedule_update_ha_state()
+        _LOGGER.debug("Area update callback called for area %s, target area: %s", area, self._area_number)
+        
+        try:
+            # Convert area callback data to match entity area number
+            # Callback sends 'A'/'B', entity has 1/2, so convert for comparison
+            if area is None:
+                should_update = True
+            elif area == 'A' and self._area_number == 1:
+                should_update = True
+            elif area == 'B' and self._area_number == 2:
+                should_update = True
+            else:
+                should_update = False
+            
+            if should_update:
+                # Update the area info from the controller using integer key
+                area_key = int(self._area_number)  # Ensure we use integer key
+                if hasattr(self._controller, 'area_state') and area_key in self._controller.area_state:
+                    self._info = self._controller.area_state[area_key]
+                    _LOGGER.debug("Updated area %s state", self._area_number)
+                else:
+                    _LOGGER.warning("No area state data available for area %s", self._area_number)
+                
+                _LOGGER.debug("Scheduling state update for area %s", self._area_number)
+                self.async_schedule_update_ha_state()
+        except (ValueError, TypeError) as e:
+            _LOGGER.error("Error processing area update callback for area %s: %s", self._area_number, e)
 
     # """Required to show up Keypad on alarm panel"""
 
@@ -140,55 +186,72 @@ class AAPModuleAlarm(AAPModuleDevice, AlarmControlPanelEntity):
     @property
     def alarm_state(self):
         """Return the state of the device."""
-        state = STATE_UNKNOWN
+        _LOGGER.debug("Checking alarm state for area %s, _info: %s", self._area_number, self._info)
+        
+        if not self._info or "status" not in self._info:
+            _LOGGER.debug("No info or status available for area %s", self._area_number)
+            return STATE_UNKNOWN
 
-        if self._info["status"]["alarm"]:
+        status = self._info["status"]
+        _LOGGER.debug("Area %s status: %s", self._area_number, status)
+        
+        if status.get("alarm", False):
             state = AlarmControlPanelState.TRIGGERED
-        elif self._info["status"]["armed"]:
+        elif status.get("armed", False):
             state = AlarmControlPanelState.ARMED_AWAY
-        elif self._info["status"]["stay_armed"]:
+        elif status.get("stay_armed", False):
             state = AlarmControlPanelState.ARMED_HOME
         elif (
-            self._info["status"]["exit_delay"]
-            or self._info["status"]["stay_exit_delay"]
+            status.get("exit_delay", False)
+            or status.get("stay_exit_delay", False)
         ):
             state = AlarmControlPanelState.PENDING
-        elif self._info["status"]["disarmed"]:
+        else:
+            # Default to disarmed if no other state is active
             state = AlarmControlPanelState.DISARMED
+            
+        _LOGGER.debug("Area %s determined state: %s", self._area_number, state)
         return state
+
+    @property
+    def available(self):
+        """Return if entity is available."""
+        return self._info is not None and "status" in self._info
 
     async def async_alarm_disarm(self, code=None):
         """Send disarm command."""
         if code:
-            self.hass.data[DATA_AAP].disarm(str(code))
+            self._controller.disarm(str(code))
         else:
-            self.hass.data[DATA_AAP].disarm(str(self._code))
+            self._controller.disarm(str(self._code))
 
     async def async_alarm_arm_home(self, code=None):
         """Send arm home command."""
-        self.hass.data[DATA_AAP].arm_stay()
+        self._controller.arm_stay()
 
     async def async_alarm_arm_away(self, code=None):
         """Send arm away command."""
         if code:
-            self.hass.data[DATA_AAP].send_keypress(str(code))
+            self._controller.send_keypress(str(code))
         else:
-            self.hass.data[DATA_AAP].arm_away()
+            self._controller.arm_away()
 
     async def async_alarm_trigger(self, code=None):
         """Alarm trigger command. Will be used to trigger a panic alarm."""
-        self.hass.data[DATA_AAP].panic_alarm("")
+        self._controller.panic_alarm("")
 
     @property
     def extra_state_attributes(self):
         """Return the state attributes."""
-        return self._info["status"]
+        if self._info and "status" in self._info:
+            return self._info["status"]
+        return {}
 
     @callback
     def async_alarm_keypress(self, keypress=None):
         """Send custom keypress."""
         if keypress:
-            self.hass.data[DATA_AAP].send_keypress(str(keypress))
+            self._controller.send_keypress(str(keypress))
 
     @property
     def supported_features(self) -> int:

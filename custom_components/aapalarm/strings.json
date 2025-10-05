@@ -1,0 +1,89 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "ArrowHead Alarm System Setup",
+        "description": "Choose how your alarm panel is connected",
+        "data": {
+          "connectiontype": "Connection Type"
+        }
+      },
+      "ip_connection": {
+        "title": "IP Connection Setup",
+        "description": "Configure the network connection to your alarm panel",
+        "data": {
+          "host": "IP Address/Hostname",
+          "port": "Port",
+          "keepalive_interval": "Keep Alive Interval (seconds)",
+          "timeout": "Connection Timeout (seconds)"
+        }
+      },
+      "serial_connection": {
+        "title": "Serial Connection Setup",
+        "description": "Configure the serial connection to your alarm panel",
+        "data": {
+          "port": "Serial Port (e.g., /dev/ttyUSB0 /dev/ttyACM0)",
+          "keepalive_interval": "Keep Alive Interval (seconds)",
+          "timeout": "Connection Timeout (seconds)"
+        }
+      },
+      "zones": {
+        "title": "Configure Zones",
+        "description": "Zones represent door/window sensors and other detection devices",
+        "data": {
+          "configure_zones": "Configure zones"
+        }
+      },
+      "zone_config": {
+        "title": "Add Zone",
+        "data": {
+          "zone_number": "Zone Number",
+          "zone_name": "Zone Name",
+          "zone_type": "Zone Type",
+          "add_another_zone": "Add another zone"
+        }
+      },
+      "areas": {
+        "title": "Configure Areas",
+        "description": "Areas represent different alarm zones/partitions",
+        "data": {
+          "configure_areas": "Configure areas"
+        }
+      },
+      "area_config": {
+        "title": "Add Area",
+        "data": {
+          "area_number": "Area Number",
+          "area_name": "Area Name",
+          "area_code": "Area Code",
+          "code_arm_required": "Require code to arm",
+          "add_another_area": "Add another area"
+        }
+      },
+      "outputs": {
+        "title": "Configure Outputs",
+        "description": "Outputs control devices like sirens, lights",
+        "data": {
+          "configure_outputs": "Configure outputs"
+        }
+      },
+      "output_config": {
+        "title": "Add Output",
+        "data": {
+          "output_number": "Output Number",
+          "output_name": "Output Name",
+          "add_another_output": "Add another output"
+        }
+      }
+    },
+    "error": {
+      "connection_timeout": "Connection timed out",
+      "connection_error": "Failed to connect to alarm system",
+      "invalid_connection_type": "Invalid connection type specified",
+      "cannot_connect": "Cannot connect to alarm system",
+      "zone_number": "Zone number already exists",
+      "area_number": "Area number already exists", 
+      "output_number": "Output number already exists"
+    }
+  }
+}
