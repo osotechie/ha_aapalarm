@@ -7,10 +7,11 @@
     "codeowners": [
         "@osotechie"
     ],
-    "version": "2024.11.24",
+    "version": "2025.10.5",
 
     "requirements": [
         "pyaapalarmmodule==2024.11.24"
       ],
-    "dependencies": []
+    "dependencies": [],
+    "config_flow": true
 }

@@ -1,0 +1,133 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "ArrowHead Alarm System Setup",
+        "description": "Choose how your alarm panel is connected",
+        "data": {
+          "connectiontype": "Connection Type"
+        },
+        "data_description": {
+          "connectiontype": "Choose 'ip' for network connection or 'serial' for direct serial connection"
+        }
+      },
+      "ip_connection": {
+        "title": "IP Connection Setup",
+        "description": "Configure the network connection to your alarm panel",
+        "data": {
+          "host": "IP Address/Hostname",
+          "port": "Port",
+          "keepalive_interval": "Keep Alive Interval (seconds)",
+          "timeout": "Connection Timeout (seconds)"
+        },
+        "data_description": {
+          "host": "IP address or hostname of the AAP alarm panel",
+          "port": "Network port to connect to (default: 5002)",
+          "keepalive_interval": "How often to send keep-alive packets (minimum 15 seconds)",
+          "timeout": "How long to wait for connection before timing out"
+        }
+      },
+      "serial_connection": {
+        "title": "Serial Connection Setup",
+        "description": "Configure the serial connection to your alarm panel",
+        "data": {
+          "port": "Serial Port (e.g., /dev/ttyUSB0, /dev/ttyACM0)",
+          "keepalive_interval": "Keep Alive Interval (seconds)",
+          "timeout": "Connection Timeout (seconds)"
+        },
+        "data_description": {
+          "port": "Serial port device path (Linux: /dev/ttyUSB0, /dev/ttyACM0)",
+          "keepalive_interval": "How often to send keep-alive packets (minimum 15 seconds)",
+          "timeout": "How long to wait for connection before timing out"
+        }
+      },
+      "zones": {
+        "title": "Configure Zones",
+        "description": "Zones represent door/window sensors and other detection devices",
+        "data": {
+          "configure_zones": "Configure zones"
+        }
+      },
+      "zone_config": {
+        "title": "Add Zone",
+        "description": "Configure individual zones (sensors)",
+        "data": {
+          "zone_number": "Zone Number",
+          "zone_name": "Zone Name",
+          "zone_type": "Zone Type",
+          "add_another_zone": "Add another zone"
+        },
+        "data_description": {
+          "zone_number": "The zone number from your alarm panel (1-32)",
+          "zone_name": "Friendly name for this zone (e.g., 'Front Door', 'Living Room Window')",
+          "zone_type": "Type of sensor/device connected to this zone"
+        }
+      },
+      "areas": {
+        "title": "Configure Areas",
+        "description": "Areas represent different alarm zones/partitions in your system",
+        "data": {
+          "configure_areas": "Configure areas"
+        }
+      },
+      "area_config": {
+        "title": "Add Area",
+        "description": "Configure individual areas (alarm partitions)",
+        "data": {
+          "area_number": "Area Number",
+          "area_name": "Area Name",
+          "area_code": "Area Code",
+          "code_arm_required": "Require code to arm",
+          "add_another_area": "Add another area"
+        },
+        "data_description": {
+          "area_number": "The area number from your alarm panel (1-2)",
+          "area_name": "Friendly name for this area (e.g., 'House', 'Garage', 'Office')",
+          "area_code": "Security code for this area (leave blank to use default)",
+          "code_arm_required": "Whether a security code is required to arm this area"
+        }
+      },
+      "outputs": {
+        "title": "Configure Outputs",
+        "description": "Outputs control devices like sirens, lights, or other controllable devices",
+        "data": {
+          "configure_outputs": "Configure outputs"
+        }
+      },
+      "output_config": {
+        "title": "Add Output",
+        "description": "Configure individual outputs (controllable devices)",
+        "data": {
+          "output_number": "Output Number",
+          "output_name": "Output Name",
+          "add_another_output": "Add another output"
+        },
+        "data_description": {
+          "output_number": "The output number from your alarm panel (1-32)",
+          "output_name": "Friendly name for this output (e.g., 'Siren', 'Garage Light')"
+        }
+      }
+    },
+    "error": {
+      "connection_timeout": "Connection timed out. Please check your network settings and try again.",
+      "connection_error": "Failed to connect to the alarm system. Please verify the settings and try again.",
+      "invalid_host": "Invalid hostname or IP address",
+      "invalid_port": "Invalid port number",
+      "zone_number": "Zone number already exists. Please choose a different number.",
+      "area_number": "Area number already exists. Please choose a different number.",
+      "output_number": "Output number already exists. Please choose a different number."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "AAP Alarm Options",
+        "description": "Configure advanced options for your AAP alarm system",
+        "data": {
+          "keepalive_interval": "Keep Alive Interval (seconds)",
+          "timeout": "Connection Timeout (seconds)"
+        }
+      }
+    }
+  }
+}

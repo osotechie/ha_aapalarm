@@ -35,17 +35,13 @@ This is a custom component for ArrowHead Home Alarm System using the IP / Serial
 
 ### HACS Based Install
 
-If you are using HACS to manage custom components in your Home Assistant installation you can easily add this repo as a custom repo in HACS.
+If you are using HACS to manage custom components in your Home Assistant installation you can easily add this repo as a custom repo in HACS using the My button.
 
-  1. Navigate to the **HACS** console within **Home Assistant**
-  2. Click the **3 dots** in the upper right corner
-  3. Select **Custom repositories**
-  4. Use the below information to add this repo to HACS
-   
-      - Repository:   `https://github.com/osotechie/ha_aapalarm`
-      - Type:         `integration`
-  
-  5. Restart Home Assistant
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?repository=ha_aapalarm&category=Integration&owner=OSoTechie)
+
+  1. Confirm you wish to add the repo
+  2. Click download to install the repo
+  3. Restart Home Assistant
   
 ### Manual Install
 
@@ -62,51 +58,18 @@ If you are using HACS to manage custom components in your Home Assistant install
 <br>
 
 ## 🗒️Configuration
+> [!NOTE]
+> Starting with version 2025.10.05, this integration supports setup through the Home Assistant integrations page. You can configure the integration directly from the UI without manually editing YAML files. If you have a previous version installed you will need to remove any YAML configuration you previously had for your alarm system.
 
-Below is an example of the configuration you need to add to your Home Assistant `Configuration.yaml` file.
+Once installed you can use the following My button to add your Alarm system to Home Assistant.
 
-```
-aapalarm:
-  
-  # CONFIGURATION TO CONNECT TO YOUR SYSTEM USING IP / SERIAL MODULE
-  connectiontype: '<type>'                                      # STRING: Set to either 'ip' or 'serial' 
-  host: xxx.xxx.xxx.xxx                                         # STRING: AAP IP Module IP Address, only include if connection type 'ip'
-  port: '<5002>' or '<serial port>;                             # STRING: IP Port, or Serial Port (DEFAULT: 5002)
-  keepalive_interval: 60
-  timeout: 20
-  
-  # CONFIGURATION FOR AREAS USED BY YOUR SYSTEM
-  areas:                                                        # Include only the areas used by your system
-    1:
-      name: 'Home'                                              # STRING: Update based on your system
-      code: '1234'                                              # STRING: Code used to Arm / Disarm the area
-      code_arm_required: False                                  # BOOLEAN: Code required to arm area (DEFAULT: True)
-    2:                                                          
-      name: 'Garage                                             # STRING: Update based on your system
-      code: '1234'                                              # STRING: Code used to Arm / Disarm the area
-      code_arm_required: False                                  # BOOLEAN: Code required to arm area (DEFAULT: True)
-  
-  # CONFIGURATION FOR OUTPUTS USED BY YOUR SYSTEM
-  outputs:                                                      *# Include only the Outputs used by your system*
-    1:                          
-      name: 'Strobe'                                            # STRING: Update based on your system
-    2:
-      name: 'Siren'                                             # STRING: Update based on your system
-    3:
-      ... 
-  
-  # CONFIGURATION FOR ZONES USED BY YOUR SYSTEM
-  zones:                                                        # Include only the Zones used by your system
-    1:
-      name: 'Entrance'                                          # STRING: Update based on your system
-      type: 'motion'                                            # STRING: Set to zone sensor type (supported types are motion, door, window,smoke)
-    2:
-      ...
-```
+[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=aapalarm)
 
-There is also sample configuration files included in this repo for additional help configuring this integration.
-- [sample_configuration_ip.yaml](sample_configuration_ip.yaml)
-- [sample_configuration_serial.yaml](sample_configuration_serial.yaml)
+Follow the setup wizard to configure:
+   - Connection settings (IP/Serial)
+   - Zones (sensors)
+   - Areas (alarm partitions) 
+   - Outputs (controllable devices)
 
 <br>
 
