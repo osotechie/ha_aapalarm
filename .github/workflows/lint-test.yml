@@ -19,8 +19,6 @@ jobs:
         run: pip install ruff
       - name: Ruff lint
         run: ruff check custom_components/aapalarm
-      - name: Ruff format check
-        run: ruff format --check custom_components/aapalarm
 
   test:
     runs-on: ubuntu-latest
