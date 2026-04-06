@@ -1,0 +1,36 @@
+name: Lint & Test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install ruff
+      - name: Ruff lint
+        run: ruff check custom_components/aapalarm
+      - name: Ruff format check
+        run: ruff format --check custom_components/aapalarm
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          pip install pytest pytest-asyncio homeassistant voluptuous pyaapalarmmodule
+      - name: Run tests
+        run: pytest tests/ -v
