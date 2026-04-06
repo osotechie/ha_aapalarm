@@ -32,3 +32,5 @@ jobs:
           pip install pytest pytest-asyncio homeassistant voluptuous pyaapalarmmodule
       - name: Run tests
         run: pytest tests/ -v
+        env:
+          PYTHONPATH: .
