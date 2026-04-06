@@ -1,7 +1,11 @@
 """AAP IP / Serial Module init file."""
 
 import asyncio
+from collections import deque
+from datetime import datetime
+import json
 import logging
+from pathlib import Path
 
 from pyaapalarmmodule import AAPAlarmPanel
 import voluptuous as vol
@@ -9,6 +13,7 @@ import voluptuous as vol
 from homeassistant.const import CONF_HOST, CONF_TIMEOUT, EVENT_HOMEASSISTANT_STOP, Platform
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.exceptions import ConfigEntryNotReady
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.discovery import async_load_platform
@@ -16,7 +21,41 @@ from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.typing import ConfigType
 
+from .const import (
+    DOMAIN,
+    DATA_AAP,
+    CONF_KEEPALIVE,
+    CONF_CONNECTIONTYPE,
+    CONF_MESSAGE_LOG_ENABLED,
+    CONF_PORT,
+    CONF_AREAS,
+    CONF_AREANAME,
+    CONF_CODE,
+    CONF_CODE_ARM_REQUIRED,
+    CONF_CODE_PANIC_REQUIRED,
+    CONF_ZONES,
+    CONF_ZONENAME,
+    CONF_ZONETYPE,
+    CONF_OUTPUTS,
+    CONF_OUTPUTNAME,
+    DEFAULT_PORT,
+    DEFAULT_KEEPALIVE,
+    DEFAULT_MESSAGE_LOG_ENABLED,
+    DEFAULT_ZONETYPE,
+    DEFAULT_TIMEOUT,
+    SIGNAL_ZONE_UPDATE,
+    SIGNAL_AREA_UPDATE,
+    SIGNAL_SYSTEM_UPDATE,
+    SIGNAL_OUTPUT_UPDATE,
+    SIGNAL_KEYPAD_UPDATE as SIGNAL_KEYPAD_UPDATE,
+    SIGNAL_MESSAGE_LOG_UPDATE,
+)
+
 _LOGGER = logging.getLogger(__name__)
+
+# Read version from manifest.json
+_MANIFEST = json.loads((Path(__file__).parent / "manifest.json").read_text())
+_VERSION = _MANIFEST.get("version", "unknown")
 
 # Platforms to load
 PLATFORMS: list[Platform] = [
@@ -25,32 +64,6 @@ PLATFORMS: list[Platform] = [
     Platform.SENSOR,
     Platform.SWITCH,
 ]
-
-from .const import (
-    DOMAIN,
-    DATA_AAP,
-    CONF_KEEPALIVE,
-    CONF_CONNECTIONTYPE,
-    CONF_PORT,
-    CONF_AREAS,
-    CONF_AREANAME,
-    CONF_CODE,
-    CONF_CODE_ARM_REQUIRED,
-    CONF_ZONES,
-    CONF_ZONENAME,
-    CONF_ZONETYPE,
-    CONF_OUTPUTS,
-    CONF_OUTPUTNAME,
-    DEFAULT_PORT,
-    DEFAULT_KEEPALIVE,
-    DEFAULT_ZONETYPE,
-    DEFAULT_TIMEOUT,
-    SIGNAL_ZONE_UPDATE,
-    SIGNAL_AREA_UPDATE,
-    SIGNAL_SYSTEM_UPDATE,
-    SIGNAL_OUTPUT_UPDATE,
-    SIGNAL_KEYPAD_UPDATE,
-)
 
 OUTPUT_SCHEMA = vol.Schema(
     {
@@ -70,6 +83,7 @@ AREA_SCHEMA = vol.Schema(
         vol.Required(CONF_AREANAME): cv.string,
         vol.Optional(CONF_CODE, default=""): cv.string,
         vol.Optional(CONF_CODE_ARM_REQUIRED, default=True): cv.boolean,
+        vol.Optional(CONF_CODE_PANIC_REQUIRED, default=True): cv.boolean,
     }
 )
 
@@ -108,7 +122,6 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     
     connectiontype = conf.get(CONF_CONNECTIONTYPE)
     host = conf.get(CONF_HOST)
-    code = "0000"
     port = conf.get(CONF_PORT)
     keep_alive = conf.get(CONF_KEEPALIVE)
     zones = conf.get(CONF_ZONES)
@@ -118,36 +131,61 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     sync_connect = asyncio.Future()
     
     _LOGGER.info("Setting up AAP Alarm Module integration")
-    _LOGGER.info("Connection Type: %s", connectiontype)
-    _LOGGER.info("Host: %s", host)
-    _LOGGER.info("Port: %s", port)
-    _LOGGER.info("Keep Alive: %s", keep_alive)
-    _LOGGER.info("Connection Timeout: %s", connection_timeout)  
+    _LOGGER.debug("Connection Type: %s", connectiontype)
+    _LOGGER.debug("Host: %s", host)
+    _LOGGER.debug("Port: %s", port)
+    _LOGGER.debug("Keep Alive: %s", keep_alive)
+    _LOGGER.debug("Connection Timeout: %s", connection_timeout)  
 
     controller = AAPAlarmPanel(
         connectiontype,
         host,
         port,
-        code,
+        "",
         keep_alive,
-        hass.loop,
+        asyncio.get_event_loop(),
         connection_timeout,
     )
 
     hass.data[DATA_AAP] = controller
+
+    # Message log buffer for last 5 raw messages (if enabled)
+    message_log_enabled = conf.get(CONF_MESSAGE_LOG_ENABLED, DEFAULT_MESSAGE_LOG_ENABLED)
+    if message_log_enabled:
+        message_log = deque(maxlen=5)
+        hass.data[f"{DATA_AAP}_message_log"] = message_log
+
+        def _log_raw_message(raw_line):
+            """Record a raw message to the log buffer."""
+            message_log.append({
+                "timestamp": datetime.now().isoformat(),
+                "raw": raw_line,
+            })
+            async_dispatcher_send(hass, SIGNAL_MESSAGE_LOG_UPDATE, None)
+
+        def _wrap_process_line(controller_ref):
+            """Wrap the client's process_line to capture raw data."""
+            original = controller_ref._client.process_line
+
+            def wrapped_process_line(line):
+                _log_raw_message(line)
+                return original(line)
+
+            controller_ref._client.process_line = wrapped_process_line
 
     @callback
     def connection_fail_callback(data):
         """Network failure callback."""
         _LOGGER.error("Could not establish a connection with the AAP IP / Serial Module")
         if not sync_connect.done():
-            hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, stop_aapalarm)
-            sync_connect.set_result(True)
+            sync_connect.set_result(False)
 
     @callback
     def connected_callback(data):
         """Handle a successful connection."""
         _LOGGER.info("Established a connection with the AAP IP / Serial Module")
+        if message_log_enabled and hasattr(controller, '_client') and controller._client:
+            _wrap_process_line(controller)
         if not sync_connect.done():
             hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, stop_aapalarm)
             sync_connect.set_result(True)
@@ -193,7 +231,12 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     _LOGGER.info("Start AAP Alarm")
     controller.start()
 
-    result = await sync_connect
+    try:
+        result = await asyncio.wait_for(sync_connect, timeout=connection_timeout)
+    except asyncio.TimeoutError:
+        _LOGGER.error("Timed out connecting to AAP Alarm Module")
+        controller.stop()
+        return False
     if not result:
         return False
 
@@ -254,47 +297,69 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     
     connectiontype = conf.get(CONF_CONNECTIONTYPE)
     host = conf.get(CONF_HOST)
-    code = "0000"
     port = conf.get(CONF_PORT)
     keep_alive = conf.get(CONF_KEEPALIVE)
-    zones = conf.get(CONF_ZONES)
-    areas = conf.get(CONF_AREAS)
-    outputs = conf.get(CONF_OUTPUTS)
     connection_timeout = conf.get(CONF_TIMEOUT)
     sync_connect = asyncio.Future()
     
     _LOGGER.info("Setting up AAP Alarm Module integration via config entry")
-    _LOGGER.info("Connection Type: %s", connectiontype)
-    _LOGGER.info("Host: %s", host)
-    _LOGGER.info("Port: %s", port)
-    _LOGGER.info("Keep Alive: %s", keep_alive)
-    _LOGGER.info("Connection Timeout: %s", connection_timeout)  
+    _LOGGER.debug("Connection Type: %s", connectiontype)
+    _LOGGER.debug("Host: %s", host)
+    _LOGGER.debug("Port: %s", port)
+    _LOGGER.debug("Keep Alive: %s", keep_alive)
+    _LOGGER.debug("Connection Timeout: %s", connection_timeout)  
 
     controller = AAPAlarmPanel(
         connectiontype,
         host,
         port,
-        code,
+        "",
         keep_alive,
-        hass.loop,
+        asyncio.get_event_loop(),
         connection_timeout,
     )
 
     hass.data[DOMAIN][entry.entry_id] = controller
+
+    # Message log buffer for last 5 raw messages (if enabled)
+    message_log_enabled = conf.get(CONF_MESSAGE_LOG_ENABLED, DEFAULT_MESSAGE_LOG_ENABLED)
+    if message_log_enabled:
+        message_log = deque(maxlen=5)
+        hass.data[DOMAIN][f"{entry.entry_id}_message_log"] = message_log
+
+        def _log_raw_message(raw_line):
+            """Record a raw message to the log buffer."""
+            message_log.append({
+                "timestamp": datetime.now().isoformat(),
+                "raw": raw_line,
+            })
+            async_dispatcher_send(hass, SIGNAL_MESSAGE_LOG_UPDATE, None)
+
+        def _wrap_process_line(controller_ref):
+            """Wrap the client's process_line to capture raw data."""
+            original = controller_ref._client.process_line
+
+            def wrapped_process_line(line):
+                _log_raw_message(line)
+                return original(line)
+
+            controller_ref._client.process_line = wrapped_process_line
 
     @callback
     def connection_fail_callback(data):
         """Network failure callback."""
         _LOGGER.error("Could not establish a connection with the AAP IP / Serial Module")
         if not sync_connect.done():
-            hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, stop_aapalarm)
             sync_connect.set_result(False)
 
     @callback
     def connected_callback(data):
         """Connected callback."""
         _LOGGER.info("Connected to AAP IP / Serial Module")
+        if message_log_enabled and hasattr(controller, '_client') and controller._client:
+            _wrap_process_line(controller)
         if not sync_connect.done():
+            hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, stop_aapalarm)
             sync_connect.set_result(True)
 
     @callback
@@ -338,9 +403,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     _LOGGER.info("Start AAP Alarm")
     controller.start()
 
-    result = await sync_connect
+    try:
+        result = await asyncio.wait_for(sync_connect, timeout=connection_timeout)
+    except asyncio.TimeoutError:
+        _LOGGER.error("Timed out connecting to AAP Alarm Module")
+        controller.stop()
+        raise ConfigEntryNotReady("Timed out connecting to AAP Alarm Module")
     if not result:
-        return False
+        raise ConfigEntryNotReady("Failed to connect to AAP Alarm Module")
 
     # Store entry reference for platforms
     hass.data[DOMAIN][f"{entry.entry_id}_entry"] = entry
@@ -410,7 +480,7 @@ class AAPModuleDevice(Entity):
             manufacturer="ArrowHead Alarm",
             model=f"Alarm Panel ({connection_type.upper()})",
             configuration_url=None,
-            sw_version="2024.11.24",
+            sw_version=_VERSION,
         )
 
     @property

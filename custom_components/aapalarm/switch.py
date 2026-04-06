@@ -68,7 +68,9 @@ class AAPModuleOutput(AAPModuleDevice, SwitchEntity):
     async def async_added_to_hass(self):
         """Register callbacks."""
         _LOGGER.debug("Adding output %s (%s) to Home Assistant", self._output_number, self._name)
-        async_dispatcher_connect(self.hass, SIGNAL_OUTPUT_UPDATE, self._update_callback)
+        self.async_on_remove(
+            async_dispatcher_connect(self.hass, SIGNAL_OUTPUT_UPDATE, self._update_callback)
+        )
         
         # Force an initial state update
         if hasattr(self._controller, 'output_state') and self._output_number in self._controller.output_state:
@@ -85,8 +87,7 @@ class AAPModuleOutput(AAPModuleDevice, SwitchEntity):
     def is_on(self):
         """Return true if device is on."""
         if self._info and "status" in self._info and "open" in self._info["status"]:
-            self._state = self._info["status"]["open"]
-            return self._state
+            return self._info["status"]["open"]
         return False
 
     @property
@@ -123,5 +124,4 @@ class AAPModuleOutput(AAPModuleDevice, SwitchEntity):
                 
                 self.async_schedule_update_ha_state()
         except (ValueError, TypeError) as e:
-            _LOGGER.error("Error processing output update callback for output %s: %s", self._output_number, e)
             _LOGGER.error("Error processing output update callback for output %s: %s", self._output_number, e)

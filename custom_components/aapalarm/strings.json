@@ -8,6 +8,13 @@
           "connectiontype": "Connection Type"
         }
       },
+      "reconfigure": {
+        "title": "Reconfigure ArrowHead Alarm System",
+        "description": "Update your alarm system connection and device configuration. Existing areas, zones, and outputs will be preserved unless you choose to reconfigure them.",
+        "data": {
+          "connectiontype": "Connection Type"
+        }
+      },
       "ip_connection": {
         "title": "IP Connection Setup",
         "description": "Configure the network connection to your alarm panel",
@@ -15,7 +22,8 @@
           "host": "IP Address/Hostname",
           "port": "Port",
           "keepalive_interval": "Keep Alive Interval (seconds)",
-          "timeout": "Connection Timeout (seconds)"
+          "timeout": "Connection Timeout (seconds)",
+          "message_log_enabled": "Enable Message Log"
         }
       },
       "serial_connection": {
@@ -24,7 +32,8 @@
         "data": {
           "port": "Serial Port (e.g., /dev/ttyUSB0 /dev/ttyACM0)",
           "keepalive_interval": "Keep Alive Interval (seconds)",
-          "timeout": "Connection Timeout (seconds)"
+          "timeout": "Connection Timeout (seconds)",
+          "message_log_enabled": "Enable Message Log"
         }
       },
       "zones": {
@@ -57,6 +66,7 @@
           "area_name": "Area Name",
           "area_code": "Area Code",
           "code_arm_required": "Require code to arm",
+          "code_panic_required": "Require code for panic",
           "add_another_area": "Add another area"
         }
       },
@@ -81,9 +91,13 @@
       "connection_error": "Failed to connect to alarm system",
       "invalid_connection_type": "Invalid connection type specified",
       "cannot_connect": "Cannot connect to alarm system",
+      "invalid_serial_port": "Invalid serial port path. Use /dev/ttyXXX or COMX format",
       "zone_number": "Zone number already exists",
       "area_number": "Area number already exists", 
       "output_number": "Output number already exists"
+    },
+    "abort": {
+      "already_configured": "This alarm panel is already configured"
     }
   }
 }

@@ -4,6 +4,11 @@
 
 ### Home Assistant - Custom Integration - ArrowHead Alarm System
 
+[![CodeQL](https://github.com/osotechie/ha_aapalarm/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/osotechie/ha_aapalarm/actions/workflows/github-code-scanning/codeql)
+[![Lint & Test](https://github.com/osotechie/ha_aapalarm/actions/workflows/lint-test.yml/badge.svg)](https://github.com/osotechie/ha_aapalarm/actions/workflows/lint-test.yml)
+[![HACS Validation](https://github.com/osotechie/ha_aapalarm/actions/workflows/validate.yml/badge.svg)](https://github.com/osotechie/ha_aapalarm/actions/workflows/validate.yml)
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
+
 </div>
 
 ---
@@ -73,7 +78,7 @@ Follow the setup wizard to configure:
 
 <br>
 
-## 🙌 Acknowledgements
+## �🙌 Acknowledgements
 
 The source code for this integration is based on the amazing work of [febalci](https://github.com/febalci), and has been adapted to more closely align with the ArrowHead Alarm System, and support both the IP and Serial modules for communicating with the alarm. Make sure to check out more of [febalci](https://github.com/febalci) work, including:
 
