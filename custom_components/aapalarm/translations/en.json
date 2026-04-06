@@ -11,6 +11,16 @@
           "connectiontype": "Choose 'ip' for network connection or 'serial' for direct serial connection"
         }
       },
+      "reconfigure": {
+        "title": "Reconfigure ArrowHead Alarm System",
+        "description": "Update your alarm system connection and device configuration. Existing areas, zones, and outputs will be preserved unless you choose to reconfigure them.",
+        "data": {
+          "connectiontype": "Connection Type"
+        },
+        "data_description": {
+          "connectiontype": "Choose 'ip' for network connection or 'serial' for direct serial connection"
+        }
+      },
       "ip_connection": {
         "title": "IP Connection Setup",
         "description": "Configure the network connection to your alarm panel",
@@ -18,13 +28,15 @@
           "host": "IP Address/Hostname",
           "port": "Port",
           "keepalive_interval": "Keep Alive Interval (seconds)",
-          "timeout": "Connection Timeout (seconds)"
+          "timeout": "Connection Timeout (seconds)",
+          "message_log_enabled": "Enable Message Log"
         },
         "data_description": {
           "host": "IP address or hostname of the AAP alarm panel",
           "port": "Network port to connect to (default: 5002)",
           "keepalive_interval": "How often to send keep-alive packets (minimum 15 seconds)",
-          "timeout": "How long to wait for connection before timing out"
+          "timeout": "How long to wait for connection before timing out",
+          "message_log_enabled": "When enabled, a sensor entity will track the last 5 raw messages received from the alarm panel"
         }
       },
       "serial_connection": {
@@ -33,12 +45,14 @@
         "data": {
           "port": "Serial Port (e.g., /dev/ttyUSB0, /dev/ttyACM0)",
           "keepalive_interval": "Keep Alive Interval (seconds)",
-          "timeout": "Connection Timeout (seconds)"
+          "timeout": "Connection Timeout (seconds)",
+          "message_log_enabled": "Enable Message Log"
         },
         "data_description": {
           "port": "Serial port device path (Linux: /dev/ttyUSB0, /dev/ttyACM0)",
           "keepalive_interval": "How often to send keep-alive packets (minimum 15 seconds)",
-          "timeout": "How long to wait for connection before timing out"
+          "timeout": "How long to wait for connection before timing out",
+          "message_log_enabled": "When enabled, a sensor entity will track the last 5 raw messages received from the alarm panel"
         }
       },
       "zones": {
@@ -78,13 +92,15 @@
           "area_name": "Area Name",
           "area_code": "Area Code",
           "code_arm_required": "Require code to arm",
+          "code_panic_required": "Require code for panic",
           "add_another_area": "Add another area"
         },
         "data_description": {
           "area_number": "The area number from your alarm panel (1-2)",
           "area_name": "Friendly name for this area (e.g., 'House', 'Garage', 'Office')",
           "area_code": "Security code for this area (leave blank to use default)",
-          "code_arm_required": "Whether a security code is required to arm this area"
+          "code_arm_required": "Whether a security code is required to arm this area",
+          "code_panic_required": "Whether a security code is required to trigger panic for this area"
         }
       },
       "outputs": {
@@ -111,11 +127,16 @@
     "error": {
       "connection_timeout": "Connection timed out. Please check your network settings and try again.",
       "connection_error": "Failed to connect to the alarm system. Please verify the settings and try again.",
+      "cannot_connect": "Cannot connect to alarm system. Please check the host and port are correct.",
       "invalid_host": "Invalid hostname or IP address",
       "invalid_port": "Invalid port number",
+      "invalid_serial_port": "Invalid serial port path. Expected format: /dev/ttyUSB0, /dev/ttyACM0, or COM1",
       "zone_number": "Zone number already exists. Please choose a different number.",
       "area_number": "Area number already exists. Please choose a different number.",
       "output_number": "Output number already exists. Please choose a different number."
+    },
+    "abort": {
+      "already_configured": "This alarm panel connection is already configured."
     }
   },
   "options": {

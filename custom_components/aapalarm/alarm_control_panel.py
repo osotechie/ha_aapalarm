@@ -27,6 +27,7 @@ from . import (
     CONF_AREANAME,
     CONF_CODE,
     CONF_CODE_ARM_REQUIRED,
+    CONF_CODE_PANIC_REQUIRED,
     DOMAIN as AAP_DOMAIN,
     SIGNAL_AREA_UPDATE,
     SIGNAL_KEYPAD_UPDATE,
@@ -37,6 +38,11 @@ _LOGGER = logging.getLogger(__name__)
 
 SERVICE_ALARM_KEYPRESS = "aap_alarm_keypress"
 ATTR_KEYPRESS = "keypress"
+
+# Valid keys on the AAP alarm keypad (excluding P/PROG for safety)
+VALID_KEYPRESS_CHARS = set("0123456789ABCEHNRSX")
+MAX_KEYPRESS_LENGTH = 16
+
 ALARM_KEYPRESS_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_ENTITY_ID): cv.entity_ids,
@@ -77,6 +83,7 @@ async def async_setup_entry(
             device_config_data[CONF_AREANAME],
             device_config_data[CONF_CODE],
             device_config_data[CONF_CODE_ARM_REQUIRED],
+            device_config_data.get(CONF_CODE_PANIC_REQUIRED, True),
             area_info,
             controller,
         )
@@ -118,6 +125,7 @@ class AAPModuleAlarm(AAPModuleDevice, AlarmControlPanelEntity):
         alarm_name,
         code,
         code_arm_required,
+        code_panic_required,
         info,
         controller,
     ) -> None:
@@ -125,14 +133,19 @@ class AAPModuleAlarm(AAPModuleDevice, AlarmControlPanelEntity):
         self._area_number = area_number  # Keep original area number for comparison
         self._code = code
         self._code_arm_required = code_arm_required
+        self._code_panic_required = code_panic_required
 
         _LOGGER.debug("Setting up alarm: %s for area number: %s", alarm_name, area_number)
         super().__init__(entry, alarm_name, info, controller, area_number, alarm_name, "areas")
 
     async def async_added_to_hass(self):
         """Register callbacks."""
-        async_dispatcher_connect(self.hass, SIGNAL_KEYPAD_UPDATE, self._update_callback)
-        async_dispatcher_connect(self.hass, SIGNAL_AREA_UPDATE, self._update_callback)
+        self.async_on_remove(
+            async_dispatcher_connect(self.hass, SIGNAL_KEYPAD_UPDATE, self._update_callback)
+        )
+        self.async_on_remove(
+            async_dispatcher_connect(self.hass, SIGNAL_AREA_UPDATE, self._update_callback)
+        )
         
         # Force an initial state update
         _LOGGER.debug("Alarm panel added to hass, forcing initial state update for area %s", self._area_number)
@@ -220,24 +233,41 @@ class AAPModuleAlarm(AAPModuleDevice, AlarmControlPanelEntity):
 
     async def async_alarm_disarm(self, code=None):
         """Send disarm command."""
-        if code:
-            self._controller.disarm(str(code))
-        else:
+        # During exit delay, allow disarm without code
+        if self.alarm_state == AlarmControlPanelState.PENDING:
             self._controller.disarm(str(self._code))
+            return
+        # When armed, require valid code
+        if not self._code:
+            self._controller.disarm("")
+            return
+        if code is None or str(code) != str(self._code):
+            _LOGGER.warning("Invalid code provided for disarm on area %s", self._area_number)
+            return
+        self._controller.disarm(str(self._code))
 
     async def async_alarm_arm_home(self, code=None):
         """Send arm home command."""
+        if self._code_arm_required and self._code:
+            if code is None or str(code) != str(self._code):
+                _LOGGER.warning("Invalid code provided for arm home on area %s", self._area_number)
+                return
         self._controller.arm_stay()
 
     async def async_alarm_arm_away(self, code=None):
         """Send arm away command."""
-        if code:
-            self._controller.send_keypress(str(code))
-        else:
-            self._controller.arm_away()
+        if self._code_arm_required and self._code:
+            if code is None or str(code) != str(self._code):
+                _LOGGER.warning("Invalid code provided for arm away on area %s", self._area_number)
+                return
+        self._controller.arm_away()
 
     async def async_alarm_trigger(self, code=None):
         """Alarm trigger command. Will be used to trigger a panic alarm."""
+        if self._code_panic_required and self._code:
+            if code is None or str(code) != str(self._code):
+                _LOGGER.warning("Invalid code provided for panic trigger on area %s", self._area_number)
+                return
         self._controller.panic_alarm("")
 
     @property
@@ -250,8 +280,16 @@ class AAPModuleAlarm(AAPModuleDevice, AlarmControlPanelEntity):
     @callback
     def async_alarm_keypress(self, keypress=None):
         """Send custom keypress."""
-        if keypress:
-            self._controller.send_keypress(str(keypress))
+        if not keypress:
+            return
+        keypress = str(keypress).upper()
+        if len(keypress) > MAX_KEYPRESS_LENGTH:
+            _LOGGER.warning("Keypress rejected: exceeds max length of %s", MAX_KEYPRESS_LENGTH)
+            return
+        if not set(keypress).issubset(VALID_KEYPRESS_CHARS):
+            _LOGGER.warning("Keypress rejected: contains invalid characters")
+            return
+        self._controller.send_keypress(keypress)
 
     @property
     def supported_features(self) -> int:

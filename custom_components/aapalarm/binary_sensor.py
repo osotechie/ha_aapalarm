@@ -67,7 +67,9 @@ class AAPModuleBinarySensor(AAPModuleDevice, BinarySensorEntity):
     async def async_added_to_hass(self):
         """Register callbacks."""
         _LOGGER.debug("Adding zone %s (%s) to Home Assistant", self._zone_number, self._name)
-        async_dispatcher_connect(self.hass, SIGNAL_ZONE_UPDATE, self._update_callback)
+        self.async_on_remove(
+            async_dispatcher_connect(self.hass, SIGNAL_ZONE_UPDATE, self._update_callback)
+        )
         
         # Force an initial state update
         if hasattr(self._controller, 'zone_state') and self._zone_number in self._controller.zone_state:
