@@ -1,0 +1,18 @@
+aap_alarm_keypress:
+  name: Alarm Keypress
+  description: Send a keypress sequence to the AAP alarm panel.
+  target:
+    entity:
+      integration: aapalarm
+      domain: alarm_control_panel
+  fields:
+    keypress:
+      name: Keypress
+      description: >-
+        The key sequence to send to the alarm panel.
+        Valid characters: 0-9, A, B, C, E, H, N, R, S, X.
+        Maximum 16 characters.
+      required: true
+      example: "1234"
+      selector:
+        text:

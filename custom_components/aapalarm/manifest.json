@@ -1,17 +1,17 @@
 {
     "domain": "aapalarm",
     "name": "ArrowHead Alarm System",
-    "documentation": "https://github.com/osotechie/ha_aapalarm",
-    "issue_tracker": "https://github.com/osotechie/ha_aapalarm/issues",
-    "integration_type": "device",
     "codeowners": [
         "@osotechie"
     ],
-    "version": "2026.4.6",
+    "config_flow": true,
+    "dependencies": [],
+    "documentation": "https://github.com/osotechie/ha_aapalarm",
+    "integration_type": "device",
+    "iot_class": "local_push",
+    "issue_tracker": "https://github.com/osotechie/ha_aapalarm/issues",
     "requirements": [
         "pyaapalarmmodule==2024.11.24"
     ],
-    "dependencies": [],
-    "config_flow": true,
-    "iot_class": "local_push"
+    "version": "2026.4.6"
 }
