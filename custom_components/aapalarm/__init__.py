@@ -21,20 +21,6 @@ from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.typing import ConfigType
 
-_LOGGER = logging.getLogger(__name__)
-
-# Read version from manifest.json
-_MANIFEST = json.loads((Path(__file__).parent / "manifest.json").read_text())
-_VERSION = _MANIFEST.get("version", "unknown")
-
-# Platforms to load
-PLATFORMS: list[Platform] = [
-    Platform.ALARM_CONTROL_PANEL,
-    Platform.BINARY_SENSOR,
-    Platform.SENSOR,
-    Platform.SWITCH,
-]
-
 from .const import (
     DOMAIN,
     DATA_AAP,
@@ -61,9 +47,23 @@ from .const import (
     SIGNAL_AREA_UPDATE,
     SIGNAL_SYSTEM_UPDATE,
     SIGNAL_OUTPUT_UPDATE,
-    SIGNAL_KEYPAD_UPDATE,
+    SIGNAL_KEYPAD_UPDATE as SIGNAL_KEYPAD_UPDATE,
     SIGNAL_MESSAGE_LOG_UPDATE,
 )
+
+_LOGGER = logging.getLogger(__name__)
+
+# Read version from manifest.json
+_MANIFEST = json.loads((Path(__file__).parent / "manifest.json").read_text())
+_VERSION = _MANIFEST.get("version", "unknown")
+
+# Platforms to load
+PLATFORMS: list[Platform] = [
+    Platform.ALARM_CONTROL_PANEL,
+    Platform.BINARY_SENSOR,
+    Platform.SENSOR,
+    Platform.SWITCH,
+]
 
 OUTPUT_SCHEMA = vol.Schema(
     {
@@ -299,9 +299,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     host = conf.get(CONF_HOST)
     port = conf.get(CONF_PORT)
     keep_alive = conf.get(CONF_KEEPALIVE)
-    zones = conf.get(CONF_ZONES)
-    areas = conf.get(CONF_AREAS)
-    outputs = conf.get(CONF_OUTPUTS)
     connection_timeout = conf.get(CONF_TIMEOUT)
     sync_connect = asyncio.Future()
     
