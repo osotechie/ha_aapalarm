@@ -29,7 +29,7 @@ jobs:
           python-version: "3.12"
       - name: Install dependencies
         run: |
-          pip install pytest pytest-asyncio homeassistant voluptuous pyaapalarmmodule
+          pip install pytest pytest-asyncio homeassistant voluptuous pyaapalarmmodule pyserial-asyncio
       - name: Run tests
         run: pytest tests/ -v
         env:
