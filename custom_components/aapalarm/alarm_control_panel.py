@@ -62,9 +62,13 @@ async def async_setup_entry(
     devices = []
     for part_num in configured_areas:
         device_config_data = AREA_SCHEMA(configured_areas[part_num])
+        part_num = int(part_num)  # JSON deserializes dict keys as strings
         
         # Get area state, fallback to empty dict if not available
-        area_info = getattr(controller, 'area_state', {}).get(part_num, {
+        # Try letter key first (controller uses 'A'/'B'), then integer, then string
+        area_letter = {1: 'A', 2: 'B'}.get(part_num)
+        area_state = getattr(controller, 'area_state', {})
+        default_info = {
             "status": {
                 "alarm": False,
                 "armed": False, 
@@ -73,7 +77,13 @@ async def async_setup_entry(
                 "stay_exit_delay": False,
                 "disarmed": True
             }
-        })
+        }
+        if area_letter and area_letter in area_state:
+            area_info = area_state[area_letter]
+        elif part_num in area_state:
+            area_info = area_state[part_num]
+        else:
+            area_info = default_info
         
         device = AAPModuleAlarm(
             hass,
@@ -150,31 +160,45 @@ class AAPModuleAlarm(AAPModuleDevice, AlarmControlPanelEntity):
         _LOGGER.debug("Alarm panel added to hass, forcing initial state update for area %s", self._area_number)
         self.async_schedule_update_ha_state()
 
+    # Mapping between area letters (from controller) and area numbers (from config)
+    AREA_LETTER_TO_NUMBER = {'A': 1, 'B': 2}
+    AREA_NUMBER_TO_LETTER = {1: 'A', 2: 'B'}
+
     @callback
     def _update_callback(self, area):
         """Update Home Assistant state, if needed."""
         _LOGGER.debug("Area update callback called for area %s, target area: %s", area, self._area_number)
         
         try:
-            # Convert area callback data to match entity area number
-            # Callback sends 'A'/'B', entity has 1/2, so convert for comparison
+            # Determine if this callback is for our area
             if area is None:
                 should_update = True
-            elif area == 'A' and self._area_number == 1:
-                should_update = True
-            elif area == 'B' and self._area_number == 2:
-                should_update = True
             else:
-                should_update = False
+                # Normalize the incoming area identifier to an integer for comparison
+                if isinstance(area, str) and area in self.AREA_LETTER_TO_NUMBER:
+                    incoming_area_num = self.AREA_LETTER_TO_NUMBER[area]
+                else:
+                    try:
+                        incoming_area_num = int(area)
+                    except (ValueError, TypeError):
+                        incoming_area_num = None
+                should_update = incoming_area_num == self._area_number
             
             if should_update:
-                # Update the area info from the controller using integer key
-                area_key = int(self._area_number)  # Ensure we use integer key
-                if hasattr(self._controller, 'area_state') and area_key in self._controller.area_state:
-                    self._info = self._controller.area_state[area_key]
-                    _LOGGER.debug("Updated area %s state", self._area_number)
+                # Try multiple key formats since the controller may use letters or integers
+                area_letter = self.AREA_NUMBER_TO_LETTER.get(self._area_number)
+                area_state = getattr(self._controller, 'area_state', {})
+                if area_letter and area_letter in area_state:
+                    self._info = area_state[area_letter]
+                    _LOGGER.debug("Updated area %s state (letter key)", self._area_number)
+                elif self._area_number in area_state:
+                    self._info = area_state[self._area_number]
+                    _LOGGER.debug("Updated area %s state (int key)", self._area_number)
+                elif str(self._area_number) in area_state:
+                    self._info = area_state[str(self._area_number)]
+                    _LOGGER.debug("Updated area %s state (str key)", self._area_number)
                 else:
-                    _LOGGER.warning("No area state data available for area %s", self._area_number)
+                    _LOGGER.warning("No area state data available for area %s (tried keys: %s, %s, %s)", self._area_number, area_letter, self._area_number, str(self._area_number))
                 
                 _LOGGER.debug("Scheduling state update for area %s", self._area_number)
                 self.async_schedule_update_ha_state()

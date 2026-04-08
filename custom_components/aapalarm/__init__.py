@@ -215,6 +215,12 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         async_dispatcher_send(hass, SIGNAL_OUTPUT_UPDATE, data)
 
     @callback
+    def keypad_updated_callback(data):
+        """Handle keypad updates."""
+        _LOGGER.debug("AAP IP / Serial Module sent a keypad update event. Updating keypad")
+        async_dispatcher_send(hass, SIGNAL_KEYPAD_UPDATE, data)
+
+    @callback
     def stop_aapalarm(event):
         """Shutdown AAP IP / Serial Module connection and thread on exit."""
         _LOGGER.info("Shutting down AAP Alarm")
@@ -224,6 +230,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     controller.callback_area_state_change = areas_updated_callback
     controller.callback_system_state_change = system_updated_callback
     controller.callback_output_state_change = output_updated_callback
+    controller.callback_keypad_state_change = keypad_updated_callback
 
     controller.callback_connected = connected_callback
     controller.callback_login_timeout = connection_fail_callback
@@ -387,6 +394,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         async_dispatcher_send(hass, SIGNAL_OUTPUT_UPDATE, data)
 
     @callback
+    def keypad_updated_callback(data):
+        """Handle keypad updates."""
+        _LOGGER.debug("Keypad update event received: %s", data)
+        async_dispatcher_send(hass, SIGNAL_KEYPAD_UPDATE, data)
+
+    @callback
     def stop_aapalarm(event):
         """Shutdown AAP IP / Serial Module connection and thread on exit."""
         _LOGGER.info("Shutting down AAP Alarm")
@@ -396,6 +409,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     controller.callback_area_state_change = areas_updated_callback
     controller.callback_system_state_change = system_updated_callback
     controller.callback_output_state_change = output_updated_callback
+    controller.callback_keypad_state_change = keypad_updated_callback
 
     controller.callback_connected = connected_callback
     controller.callback_login_timeout = connection_fail_callback
