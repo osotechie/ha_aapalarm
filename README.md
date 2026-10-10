@@ -38,6 +38,8 @@ This is a custom component for ArrowHead Home Alarm System using the IP / Serial
 
 ## 💽 Installation
 
+Home Assistant automatically installs the dependencies declared in the integration manifest, including `pyserial-asyncio` (which provides `serial_asyncio`). Version 2026.4.7 adds this missing dependency for Home Assistant 2026.10 compatibility.
+
 ### HACS Based Install
 
 If you are using HACS to manage custom components in your Home Assistant installation you can easily add this repo as a custom repo in HACS using the My button.
