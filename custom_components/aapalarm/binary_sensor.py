@@ -5,8 +5,8 @@ import logging
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import (
     CONF_ZONENAME,
@@ -32,10 +32,12 @@ async def async_setup_entry(
     devices = []
     for zone_num in configured_zones:
         device_config_data = ZONE_SCHEMA(configured_zones[zone_num])
-        
+
         # Get zone state, fallback to empty dict if not available
-        zone_info = getattr(controller, 'zone_state', {}).get(zone_num, {"status": {"open": False}})
-        
+        zone_info = getattr(controller, "zone_state", {}).get(
+            zone_num, {"status": {"open": False}}
+        )
+
         device = AAPModuleBinarySensor(
             hass,
             entry,
@@ -54,7 +56,14 @@ class AAPModuleBinarySensor(AAPModuleDevice, BinarySensorEntity):
     """Representation of an AAP IP / Serial Module binary sensor."""
 
     def __init__(
-        self, hass: HomeAssistant, entry: ConfigEntry, zone_number, zone_name, zone_type, info, controller
+        self,
+        hass: HomeAssistant,
+        entry: ConfigEntry,
+        zone_number,
+        zone_name,
+        zone_type,
+        info,
+        controller,
     ) -> None:
         """Initialize the binary_sensor."""
         self._zone_type = zone_type
@@ -66,13 +75,20 @@ class AAPModuleBinarySensor(AAPModuleDevice, BinarySensorEntity):
 
     async def async_added_to_hass(self):
         """Register callbacks."""
-        _LOGGER.debug("Adding zone %s (%s) to Home Assistant", self._zone_number, self._name)
-        self.async_on_remove(
-            async_dispatcher_connect(self.hass, SIGNAL_ZONE_UPDATE, self._update_callback)
+        _LOGGER.debug(
+            "Adding zone %s (%s) to Home Assistant", self._zone_number, self._name
         )
-        
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass, SIGNAL_ZONE_UPDATE, self._update_callback
+            )
+        )
+
         # Force an initial state update
-        if hasattr(self._controller, 'zone_state') and self._zone_number in self._controller.zone_state:
+        if (
+            hasattr(self._controller, "zone_state")
+            and self._zone_number in self._controller.zone_state
+        ):
             self._info = self._controller.zone_state[self._zone_number]
             _LOGGER.debug("Initial zone %s state: %s", self._zone_number, self._info)
             self.async_schedule_update_ha_state()
@@ -104,20 +120,33 @@ class AAPModuleBinarySensor(AAPModuleDevice, BinarySensorEntity):
     @callback
     def _update_callback(self, zone):
         """Update the zone's state, if needed."""
-        _LOGGER.debug("Zone update callback triggered for zone %s, target zone %s", zone, self._zone_number)
-        
+        _LOGGER.debug(
+            "Zone update callback triggered for zone %s, target zone %s",
+            zone,
+            self._zone_number,
+        )
+
         # Handle different data types for zone comparison - zone comes as string from controller
         try:
             # Convert both to int for comparison, or if zone is None, update all
             if zone is None or int(zone) == int(self._zone_number):
                 # Update the zone info from the controller using integer key
                 zone_key = int(self._zone_number)  # Ensure we use integer key
-                if hasattr(self._controller, 'zone_state') and zone_key in self._controller.zone_state:
+                if (
+                    hasattr(self._controller, "zone_state")
+                    and zone_key in self._controller.zone_state
+                ):
                     self._info = self._controller.zone_state[zone_key]
                     _LOGGER.debug("Updated zone %s state", self._zone_number)
                 else:
-                    _LOGGER.warning("No zone state data available for zone %s", self._zone_number)
-                
+                    _LOGGER.warning(
+                        "No zone state data available for zone %s", self._zone_number
+                    )
+
                 self.async_schedule_update_ha_state()
         except (ValueError, TypeError) as e:
-            _LOGGER.error("Error processing zone update callback for zone %s: %s", self._zone_number, e)
+            _LOGGER.error(
+                "Error processing zone update callback for zone %s: %s",
+                self._zone_number,
+                e,
+            )

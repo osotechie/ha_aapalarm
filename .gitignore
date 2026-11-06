@@ -1,1 +1,6 @@
-custom_components/crowipmodule/__pycache__
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+test-results.xml
