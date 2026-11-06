@@ -1,0 +1,4 @@
+pytest-homeassistant
+ruff
+pyaapalarmmodule==2024.11.24
+pyserial-asyncio==0.6
